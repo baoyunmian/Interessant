@@ -7,6 +7,7 @@ import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.content.ContextCompat;
 import android.support.v4.view.animation.FastOutSlowInInterpolator;
+import android.support.v4.view.animation.LinearOutSlowInInterpolator;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
@@ -52,6 +53,8 @@ public class MovieDetailActivity extends RxAppCompatActivity implements View.OnC
     private FabToggle play;
     private ReplyAdapter adapter;
     private View movieDescription;
+    private RecyclerView replies;
+    private ParallaxScrimageView backdrop;
 
     private int fabOffset;
     private int lastId;
@@ -61,8 +64,8 @@ public class MovieDetailActivity extends RxAppCompatActivity implements View.OnC
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.movie_detail_activity);
-        RecyclerView replies = (RecyclerView) findViewById(R.id.recycler_replies);
-        final ParallaxScrimageView backdrop = (ParallaxScrimageView) findViewById(R.id.backdrop);
+        replies = (RecyclerView) findViewById(R.id.recycler_replies);
+        backdrop = (ParallaxScrimageView) findViewById(R.id.backdrop);
         final ImageButton back = (ImageButton) findViewById(R.id.back);
         back.setOnClickListener(this);
 
@@ -70,9 +73,9 @@ public class MovieDetailActivity extends RxAppCompatActivity implements View.OnC
 
         movieDescription = LayoutInflater.from(this)
                 .inflate(R.layout.item_movie_detail_header, replies, false);
-        TextView title = (TextView) movieDescription.findViewById(R.id.movie_title);
-        TextView type = (TextView) movieDescription.findViewById(R.id.movie_type);
-        TextView description = (TextView) movieDescription.findViewById(R.id.movie_desc);
+        final TextView title = (TextView) movieDescription.findViewById(R.id.movie_title);
+        final TextView type = (TextView) movieDescription.findViewById(R.id.movie_type);
+        final TextView description = (TextView) movieDescription.findViewById(R.id.movie_desc);
 
         title.setText(item.data.title);
         type.setText(item.data.category + " | " + TimeUtils.secToTime((int) item.data.duration));
@@ -86,6 +89,7 @@ public class MovieDetailActivity extends RxAppCompatActivity implements View.OnC
                 backdrop.getViewTreeObserver().removeOnPreDrawListener(this);
                 fabOffset = backdrop.getHeight() - play.getHeight() / 2;
                 play.setOffset(fabOffset);
+                makeTransitionAnimation(title, type, description);
                 return true;
             }
         });
@@ -105,6 +109,10 @@ public class MovieDetailActivity extends RxAppCompatActivity implements View.OnC
 
         replayApi = InteressantFactory.getRetrofit().createApi(ReplayApi.class);
 
+        setRecyclerView();
+    }
+
+    private void setRecyclerView() {
         adapter = new ReplyAdapter(datas, movieDescription);
         replies.addItemDecoration(new InsetDividerDecoration(
                 ReplyAdapter.Holder.class,
@@ -134,6 +142,45 @@ public class MovieDetailActivity extends RxAppCompatActivity implements View.OnC
                 }
             }
         });
+    }
+
+    private void makeTransitionAnimation(TextView title, TextView type, TextView description) {
+        LinearOutSlowInInterpolator interpolator = new LinearOutSlowInInterpolator();
+        play.setTranslationY(fabOffset + 100);
+        play.setScaleY(0f);
+        play.setScaleX(0f);
+        play.animate()
+                .translationY(fabOffset)
+                .scaleY(1f)
+                .scaleX(1f)
+                .setStartDelay(350)
+                .setDuration(350)
+                .setInterpolator(interpolator)
+                .start();
+
+        title.setTranslationY(200);
+        title.animate()
+                .translationY(0)
+                .setInterpolator(interpolator)
+                .setStartDelay(50)
+                .setDuration(350)
+                .start();
+
+        type.setTranslationY(200);
+        type.animate()
+                .translationY(0)
+                .setInterpolator(interpolator)
+                .setStartDelay(100)
+                .setDuration(350)
+                .start();
+
+        description.setTranslationY(200);
+        description.animate()
+                .translationY(0)
+                .setInterpolator(interpolator)
+                .setStartDelay(150)
+                .setDuration(350)
+                .start();
     }
 
     @Override
